@@ -830,6 +830,23 @@ int ReadFlash() {
 	}
 }
 
+char* GetI2CDevice() {
+	char* dev = "/dev/i2c-1";
+	FILE* f = fopen("/proc/device-tree/compatible", "rb");
+	if (f != NULL)
+	{
+		char buf[1024];
+		if (fgets(buf, sizeof(buf), f))
+		{
+			if (strstr(buf, "radxa"))
+				dev = "/dev/i2c-3";
+		}
+		fclose(f);
+	}
+
+	return dev;
+}
+
 int main(int argc, char* argv[])
 {
 	struct pollfd mcuPollFd;
@@ -837,6 +854,8 @@ int main(int argc, char* argv[])
 	uint8_t adr = 0x15;
 	int ret = 0;
 	char *inputFile = "PiJuice.elf.binar";
+
+	char* i2cDev = GetI2CDevice();
 	 
 	if (signal(SIGINT, app_terminate_handler) == SIG_ERR)
 		printf("\ncan't catch SIGINT\n"); 
@@ -859,8 +878,8 @@ int main(int argc, char* argv[])
 		printf("attempting to default address %x\n", adr);
 	}
 	
-	sysBootloaderFd = OpenI2C("/dev/i2c-1");//OpenUart("/dev/ttyAMA0");
-	appI2CFd = OpenAppI2C("/dev/i2c-1", adr);
+	sysBootloaderFd = OpenI2C(i2cDev);//OpenUart("/dev/ttyAMA0");
+	appI2CFd = OpenAppI2C(i2cDev, adr);
 
 	if (sysBootloaderFd < 0 || appI2CFd < 0) {
 		printf("Error opening I2C ports, aborting\n");
